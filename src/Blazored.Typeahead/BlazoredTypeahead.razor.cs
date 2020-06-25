@@ -34,6 +34,7 @@ namespace Blazored.Typeahead
         [Parameter] public Expression<Func<IList<TValue>>> ValuesExpression { get; set; }
 
         [Parameter] public Func<string, Task<IEnumerable<TItem>>> SearchMethod { get; set; }
+        [Parameter] public Func<string, Task<TItem>> AddMethod { get; set; }
         [Parameter] public Func<TItem, TValue> ConvertMethod { get; set; }
 
         [Parameter] public RenderFragment NotFoundTemplate { get; set; }
@@ -53,6 +54,7 @@ namespace Blazored.Typeahead
 
         [Parameter] public bool StopPropagation { get; set; } = false;
         [Parameter] public bool PreventDefault { get; set; } = false;
+        [Parameter] public bool EnableAddOnNotFound { get; set; } = false;
 
         private bool IsSearching { get; set; } = false;
         private bool IsShowingSuggestions { get; set; } = false;
@@ -85,6 +87,11 @@ namespace Blazored.Typeahead
 
         protected override void OnInitialized()
         {
+            if (EnableAddOnNotFound && AddMethod == null)
+            {
+                throw new InvalidOperationException($"{GetType()} requires a {nameof(AddMethod)} parameter.");
+            }
+
             if (SearchMethod == null)
             {
                 throw new InvalidOperationException($"{GetType()} requires a {nameof(SearchMethod)} parameter.");
@@ -277,13 +284,33 @@ namespace Blazored.Typeahead
         private bool _resettingControl = false;
         private async Task ResetControl()
         {
-            if (!_resettingControl)
+            if (!_resettingControl && !EnableAddOnNotFound)
             {
                 _resettingControl = true;
                 await Task.Delay(200);
                 Initialize();
                 _resettingControl = false;
             }
+        }
+
+        private async Task AddNewItem()
+        {
+            if (_resettingControl)
+            {
+                while (_resettingControl)
+                {
+                    await Task.Delay(150);
+                }
+            }
+
+            IsShowingSuggestions = !IsShowingSuggestions;
+            var newItem = await AddMethod?.Invoke(_searchText);
+            if (newItem != null)
+            {
+                await SelectResult(newItem);
+            }
+
+            //await ShowMaximumSuggestions();
         }
 
         private async Task ShowMaximumSuggestions()

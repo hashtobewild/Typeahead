@@ -1,5 +1,39 @@
 ﻿@page "/"
 
+
+<h1>Blazored Typeahead - Add Not Found</h1>
+
+<BlazoredTypeahead SearchMethod="GetPeopleLocal"
+                   AddMethod="AddPerson"
+                   @bind-Values="SelectedPeople"
+                   Disabled="IsDisabledMulti"
+                   EnableDropDown="true"
+                   EnableAddOnNotFound="true"
+                   MinimumLength="2"
+                   placeholder="Search by first name...">
+    <SelectedTemplate Context="person">
+        @person.Firstname
+    </SelectedTemplate>
+    <HelpTemplate>
+        Please enter a minimum of 2 characters to perform a search.
+    </HelpTemplate>
+    <ResultTemplate Context="person">
+        @person.Firstname @person.Lastname (Id: @person.Id)
+    </ResultTemplate>
+</BlazoredTypeahead>
+<button class="btn btn-primary" style="margin-top: 20px;" @onclick="@(() => IsDisabledMulti = !IsDisabledMulti)">@(IsDisabledMulti ? "Enable" : "Disable")</button>
+<hr />
+
+@if (SelectedPeople != null)
+{
+    <p>Selected People:</p>
+    foreach (var person in SelectedPeople)
+    {
+        <p>@person.Firstname @person.Lastname</p>
+    }
+}
+
+
 <h1>Blazored Typeahead - Form</h1>
 
 <EditForm Model="FormModel" OnValidSubmit="HandleFormSubmit">
@@ -226,6 +260,45 @@
     private async Task<IEnumerable<Person>> GetPeopleLocal(string searchText)
     {
         return await Task.FromResult(People.Where(x => x.Firstname.ToLower().Contains(searchText.ToLower())).ToList());
+    }
+
+    private async Task<Person> AddPerson(string searchText)
+    {
+        if (string.IsNullOrEmpty(searchText))
+        {
+            return null;
+        }
+
+        var items = searchText.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+        if (items.Length == 0)
+        {
+            return null;
+        }
+
+        var firstName = "";
+        var lastName = "";
+
+        if (items.Length > 0)
+        {
+            firstName = items.First();
+        }
+
+        if (items.Length > 1)
+        {
+            lastName = items.Last();
+        }
+
+        var tempPerson = new Person()
+        {
+            Age = 0,
+            Firstname = firstName,
+            Id = People.Count + 1,
+            Lastname = lastName,
+            Location = ""
+        };
+
+        People.Add(tempPerson);
+        return tempPerson;
     }
 
     private void HandleFormSubmit()

@@ -127,6 +127,14 @@
                 </svg>
             </div>
         }
+
+        @if (!Disabled && EnableAddOnNotFound && ShowNotFound())
+        {
+            <div class="blazored-typeahead__input-icon" @onclick="AddNewItem">
+                +
+            </div>
+        }
+
     </div>
 
     @if (ShouldShowHelpTemplate())
